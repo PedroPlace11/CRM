@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title inertia>{{ config('app.name', 'CRM') }}</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     @routes
     @vite(['resources/js/app.js', 'resources/css/app.css'])
     @inertiaHead

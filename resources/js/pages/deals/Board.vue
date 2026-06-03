@@ -54,39 +54,43 @@ function onDrop(stageId, evt) {
             </header>
 
             <form @submit.prevent="applyFilters" class="filters">
-                <div class="field span-2">
-                    <label>Pesquisa</label>
-                    <input v-model="form.q" placeholder="Nome do negocio" />
+                <div class="filters-row filters-row--main">
+                    <div class="field field--search">
+                        <label>Pesquisa</label>
+                        <input v-model="form.q" placeholder="Nome do negocio" />
+                    </div>
+                    <div class="field field--owner">
+                        <label>Responsavel</label>
+                        <select v-model="form.owner_id">
+                            <option value="">Todos</option>
+                            <option v-for="o in owners" :key="o.id" :value="o.id">{{ o.name }}</option>
+                        </select>
+                    </div>
+                    <div class="field field--stage">
+                        <label>Etapa</label>
+                        <select v-model="form.stage_id">
+                            <option value="">Todas</option>
+                            <option v-for="s in stages" :key="s.id" :value="s.id">{{ s.name }}</option>
+                        </select>
+                    </div>
+                    <div class="field field--date">
+                        <label>Fecho de</label>
+                        <input type="date" v-model="form.expected_from" />
+                    </div>
+                    <div class="field field--date">
+                        <label>Fecho ate</label>
+                        <input type="date" v-model="form.expected_to" />
+                    </div>
                 </div>
-                <div class="field">
-                    <label>Responsavel</label>
-                    <select v-model="form.owner_id">
-                        <option value="">Todos</option>
-                        <option v-for="o in owners" :key="o.id" :value="o.id">{{ o.name }}</option>
-                    </select>
-                </div>
-                <div class="field">
-                    <label>Etapa</label>
-                    <select v-model="form.stage_id">
-                        <option value="">Todas</option>
-                        <option v-for="s in stages" :key="s.id" :value="s.id">{{ s.name }}</option>
-                    </select>
-                </div>
-                <div class="field">
-                    <label>Fecho de</label>
-                    <input type="date" v-model="form.expected_from" />
-                </div>
-                <div class="field">
-                    <label>Fecho ate</label>
-                    <input type="date" v-model="form.expected_to" />
-                </div>
-                <div class="field">
-                    <label>Valor min</label>
-                    <input type="number" v-model="form.min_value" />
-                </div>
-                <div class="field">
-                    <label>Valor max</label>
-                    <input type="number" v-model="form.max_value" />
+                <div class="filters-row filters-row--secondary">
+                    <div class="field field--value">
+                        <label>Valor min</label>
+                        <input type="number" v-model="form.min_value" />
+                    </div>
+                    <div class="field field--value">
+                        <label>Valor max</label>
+                        <input type="number" v-model="form.max_value" />
+                    </div>
                 </div>
             </form>
 
@@ -182,13 +186,25 @@ function onDrop(stageId, evt) {
 
 .filters {
     display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 12px;
     background: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 14px;
     padding: 12px;
     margin-bottom: 16px;
+}
+
+.filters-row {
+    display: grid;
+    gap: 12px;
+}
+
+.filters-row--main {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.filters-row--secondary {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .field {
@@ -212,8 +228,21 @@ function onDrop(stageId, evt) {
     background: #fff;
 }
 
-.span-2 {
+.field--search {
+    grid-column: span 4 / span 4;
+}
+
+.field--owner,
+.field--stage {
     grid-column: span 2 / span 2;
+}
+
+.field--date {
+    grid-column: span 3 / span 3;
+}
+
+.field--value {
+    grid-column: span 3 / span 3;
 }
 
 .board-wrapper {
@@ -306,16 +335,34 @@ function onDrop(stageId, evt) {
 }
 
 @media (max-width: 1100px) {
-    .filters {
+    .filters-row--main,
+    .filters-row--secondary {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .span-2 {
+    .field--search,
+    .field--owner,
+    .field--stage,
+    .field--date,
+    .field--value {
         grid-column: span 2 / span 2;
     }
 }
 
 @media (max-width: 720px) {
+    .filters-row--main,
+    .filters-row--secondary {
+        grid-template-columns: 1fr;
+    }
+
+    .field--search,
+    .field--owner,
+    .field--stage,
+    .field--date,
+    .field--value {
+        grid-column: auto;
+    }
+
     .page-header {
         flex-direction: column;
         align-items: flex-start;

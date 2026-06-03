@@ -47,6 +47,9 @@ const activeFollowUp = computed(() =>
     props.deal.follow_up_sequence && props.deal.follow_up_sequence.status === 'active'
         ? props.deal.follow_up_sequence : null);
 
+const stageText = computed(() => props.deal.stage?.name || 'Sem etapa');
+const formatDate = (value) => (value ? new Intl.DateTimeFormat('pt-PT').format(new Date(value)) : '-');
+
 // Timeline (server-side filters)
 const timeline = ref([]);
 const filters = ref({ kinds: ['activity', 'email', 'event'], types: [], from: '', to: '' });
@@ -100,7 +103,7 @@ const openPreview = (entry) => { previewEntry.value = entry; };
                         <span v-if="deal.entity?.name">{{ deal.entity?.name }}</span>
                         <span v-if="deal.person?.name">{{ deal.person?.name }}</span>
                         <span>EUR {{ deal.value }}</span>
-                        <span class="stage-pill">{{ deal.stage?.name }}</span>
+                        <span class="stage-pill">Etapa: {{ stageText }}</span>
                     </div>
                 </div>
             </header>
@@ -130,7 +133,7 @@ const openPreview = (entry) => { previewEntry.value = entry; };
                     <h2>Detalhes</h2>
                     <dl class="details">
                         <div><dt>Probabilidade</dt><dd>{{ deal.probability }}%</dd></div>
-                        <div><dt>Fecho previsto</dt><dd>{{ deal.expected_close_date }}</dd></div>
+                        <div><dt>Fecho previsto</dt><dd>{{ formatDate(deal.expected_close_date) }}</dd></div>
                         <div><dt>Responsavel</dt><dd>{{ deal.owner?.name }}</dd></div>
                     </dl>
                 </div>
@@ -296,11 +299,12 @@ const openPreview = (entry) => { previewEntry.value = entry; };
     text-overflow: ellipsis;
 }
 
-.stage-pill {
+.meta .stage-pill {
     background: #0f172a;
     color: #fff;
     border: none;
     max-width: 140px;
+    flex-shrink: 0;
 }
 
 .followup {
