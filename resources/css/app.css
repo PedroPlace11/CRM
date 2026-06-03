@@ -4,6 +4,28 @@
 @source '../../storage/framework/views/*.php';
 
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+    --font-sans: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+html {
+    background: #eef2ff;
+}
+
+body {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 24%),
+        radial-gradient(circle at bottom right, rgba(249, 115, 22, 0.08), transparent 22%),
+        linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+    color: #0f172a;
+}
+
+#app {
+    min-height: 100vh;
+}
+
+::selection {
+    background: rgba(37, 99, 235, 0.18);
+    color: #0f172a;
 }
