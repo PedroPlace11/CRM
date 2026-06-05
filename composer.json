@@ -19,6 +19,8 @@
         "maatwebsite/excel": "*",
         "openai-php/laravel": "*",
         "pragmarx/google2fa-laravel": "*",
+        "resend/resend-laravel": "^1.4",
+        "resend/resend-php": "*",
         "spatie/laravel-activitylog": "*",
         "spatie/laravel-medialibrary": "*",
         "spatie/laravel-permission": "*",

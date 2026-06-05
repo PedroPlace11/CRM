@@ -15,11 +15,32 @@ const submitActivity = () => activityForm.post(`/deals/${props.deal.id}/activiti
 
 // Proposal upload
 const proposalFile = ref(null);
+const proposalInputRef = ref(null);
+const proposalFileName = ref('');
+const proposalUploadForm = useForm({ file: null });
 const uploadProposal = () => {
-    if (!proposalFile.value) return;
-    const fd = new FormData();
-    fd.append('file', proposalFile.value);
-    useForm({}).post(`/deals/${props.deal.id}/proposals`, { forceFormData: true, data: fd });
+    if (!proposalFile.value) {
+        alert('Escolha um ficheiro antes de carregar o anexo.');
+        return;
+    }
+    proposalUploadForm.file = proposalFile.value;
+    proposalUploadForm.post(`/deals/${props.deal.id}/proposals`, {
+        forceFormData: true,
+        preserveScroll: true,
+        onSuccess: () => {
+            proposalUploadForm.reset();
+            proposalFile.value = null;
+            proposalFileName.value = '';
+            if (proposalInputRef.value) proposalInputRef.value.value = '';
+        },
+    });
+};
+const openProposalPicker = () => proposalInputRef.value?.click();
+const onProposalSelected = (event) => {
+    const file = event.target?.files?.[0] ?? null;
+    proposalFile.value = file;
+    proposalFileName.value = file?.name ?? '';
+    if (file) uploadProposal();
 };
 
 // Send proposal email
@@ -32,8 +53,20 @@ const sendingProposalId = ref(null);
 const sendProposal = (proposal) => {
     sendingProposalId.value = proposal.id;
     emailForm.post(`/deals/${props.deal.id}/proposals/${proposal.id}/send`, {
+        onError: (errors) => {
+            const msg = errors.proposal_email || errors.to_email || errors.subject || errors.body;
+            if (msg) alert(msg);
+        },
         onFinish: () => sendingProposalId.value = null,
     });
+};
+const sendSelectedProposal = () => {
+    const fallbackProposal = props.deal.proposals?.[0] ?? null;
+    if (!fallbackProposal) {
+        alert('Nao existe proposta carregada para enviar por email.');
+        return;
+    }
+    sendProposal(fallbackProposal);
 };
 
 // Follow-up cancel
@@ -193,8 +226,16 @@ const openPreview = (entry) => { previewEntry.value = entry; };
                 <div class="panel-header">
                     <h2>Propostas</h2>
                     <div class="upload">
-                        <input type="file" @change="proposalFile = $event.target.files[0]" />
-                        <button @click="uploadProposal" class="btn-outline">Carregar</button>
+                        <input
+                            ref="proposalInputRef"
+                            type="file"
+                            class="sr-only"
+                            @change="onProposalSelected"
+                        />
+                        <span class="file-name">{{ proposalFileName || 'Nenhum ficheiro selecionado' }}</span>
+                        <button @click="openProposalPicker" :disabled="proposalUploadForm.processing" class="btn-outline">
+                            {{ proposalUploadForm.processing ? 'A carregar...' : 'Carregar anexo' }}
+                        </button>
                     </div>
                 </div>
 
@@ -215,12 +256,20 @@ const openPreview = (entry) => { previewEntry.value = entry; };
                         </div>
                     </li>
                 </ul>
+                <p v-if="!deal.proposals?.length" class="hint">Ainda nao existem propostas carregadas para este negocio.</p>
 
                 <div class="email-editor">
                     <h3>Email de envio (editavel)</h3>
                     <input v-model="emailForm.to_email" />
                     <input v-model="emailForm.subject" />
                     <textarea v-model="emailForm.body" rows="6"></textarea>
+                    <button
+                        class="btn-primary"
+                        :disabled="emailForm.processing"
+                        @click="sendSelectedProposal"
+                    >
+                        {{ emailForm.processing ? 'A enviar...' : 'Enviar email' }}
+                    </button>
                 </div>
             </section>
 
@@ -546,6 +595,34 @@ const openPreview = (entry) => { previewEntry.value = entry; };
     display: flex;
     gap: 10px;
     align-items: center;
+}
+
+.upload {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.file-name {
+    font-size: 0.9rem;
+    color: #64748b;
+    max-width: 320px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 .email-editor {

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class ProposalController extends Controller
 {
@@ -49,13 +50,22 @@ class ProposalController extends Controller
             'body'     => ['required', 'string'],
         ]);
 
-        // Send email with proposal attached.
-        Mail::to($data['to_email'])->send(new ProposalMail(
-            subject: $data['subject'],
-            body:    $data['body'],
-            attachmentPath: Storage::disk('local')->path($proposal->file_path),
-            attachmentName: $proposal->file_name,
-        ));
+        try {
+            Mail::to($data['to_email'])->send(new ProposalMail(
+                subject: $data['subject'],
+                body:    $data['body'],
+                attachmentPath: Storage::disk('local')->path($proposal->file_path),
+                attachmentName: $proposal->file_name,
+            ));
+        } catch (TransportExceptionInterface $e) {
+            report($e);
+
+            $message = str_contains(strtolower($e->getMessage()), 'only send testing emails to your own email address')
+                ? 'Resend em modo de teste: so pode enviar para o seu proprio email. Verifique um dominio no Resend para enviar para outros destinatarios.'
+                : 'Falha ao enviar email. Verifique a configuracao de email e tente novamente.';
+
+            return back()->withErrors(['proposal_email' => $message]);
+        }
 
         $proposal->update(['sent_at' => now()]);
 

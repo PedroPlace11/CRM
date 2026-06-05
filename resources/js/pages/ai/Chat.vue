@@ -1,7 +1,7 @@
 <script setup>
 import AppLayout from '@/layouts/AppLayout.vue';
 import { router, usePage } from '@inertiajs/vue3';
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 
 const messages = ref([]);
 const input = ref('');
@@ -9,6 +9,7 @@ const conversationId = ref(null);
 const conversations = ref([]);
 const streaming = ref(false);
 const loadingHistory = ref(false);
+const chatCardRef = ref(null);
 const page = usePage();
 const isEmbed = computed(() => page.url.includes('embed=1'));
 
@@ -24,6 +25,12 @@ const loadConversations = async () => {
     conversations.value = await res.json();
 };
 
+const scrollToLastMessage = async () => {
+    await nextTick();
+    if (!chatCardRef.value) return;
+    chatCardRef.value.scrollTop = chatCardRef.value.scrollHeight;
+};
+
 const loadMessages = async (id) => {
     if (!id) return;
     loadingHistory.value = true;
@@ -35,6 +42,7 @@ const loadMessages = async (id) => {
             content: m.content,
             payload: m.meta?.payload || null,
         }));
+        await scrollToLastMessage();
     } finally {
         loadingHistory.value = false;
     }
@@ -53,6 +61,28 @@ const send = async () => {
     streaming.value = true;
     messages.value.push({ role: 'assistant', content: '', payload: null });
 
+    const fallbackNoStream = async () => {
+        const fallbackRes = await fetch('/ai/stream?no_stream=1', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify({ message: userMsg, conversation_id: conversationId.value }),
+        });
+
+        const data = await fallbackRes.json();
+        if (!fallbackRes.ok) {
+            throw new Error(data?.message || `HTTP ${fallbackRes.status}`);
+        }
+
+        messages.value[messages.value.length - 1].content = data.reply || '';
+        if (data.conversation_id) conversationId.value = data.conversation_id;
+        if (data.payload) messages.value[messages.value.length - 1].payload = data.payload;
+        await scrollToLastMessage();
+    };
+
     try {
         const res = await fetch('/ai/stream', {
             method: 'POST',
@@ -63,21 +93,46 @@ const send = async () => {
             },
             body: JSON.stringify({ message: userMsg, conversation_id: conversationId.value }),
         });
+
+        if (!res.ok || !res.body) {
+            await fallbackNoStream();
+            return;
+        }
+
         const reader = res.body.getReader();
         const dec = new TextDecoder();
+        let sseBuffer = '';
+        let gotDelta = false;
+        let gotError = false;
+
         while (true) {
             const { value, done } = await reader.read();
             if (done) break;
-            const chunk = dec.decode(value);
-            for (const line of chunk.split('\n')) {
+            sseBuffer += dec.decode(value, { stream: true });
+
+            const lines = sseBuffer.split('\n');
+            sseBuffer = lines.pop() || '';
+
+            for (const line of lines) {
                 if (!line.startsWith('data:')) continue;
                 try {
                     const data = JSON.parse(line.slice(5).trim());
-                    if (data.delta) messages.value[messages.value.length - 1].content += data.delta;
+                    if (data.delta) {
+                        messages.value[messages.value.length - 1].content += data.delta;
+                        gotDelta = true;
+                    }
                     if (data.conversation_id) conversationId.value = data.conversation_id;
                     if (data.payload) messages.value[messages.value.length - 1].payload = data.payload;
+                    if (data.error) {
+                        messages.value[messages.value.length - 1].content = `[erro: ${data.error}]`;
+                        gotError = true;
+                    }
                 } catch {}
             }
+        }
+
+        if (!gotDelta && !gotError) {
+            await fallbackNoStream();
         }
     } catch (e) {
         messages.value[messages.value.length - 1].content = '[erro: ' + e.message + ']';
@@ -119,7 +174,15 @@ onMounted(async () => {
         conversationId.value = conversations.value[0].id;
         await loadMessages(conversationId.value);
     }
+    await scrollToLastMessage();
 });
+
+watch(
+    () => messages.value.length,
+    async () => {
+        await scrollToLastMessage();
+    }
+);
 </script>
 
 <template>
@@ -145,7 +208,7 @@ onMounted(async () => {
                 </button>
             </div>
 
-            <div class="chat-card">
+            <div ref="chatCardRef" class="chat-card">
                 <div v-if="loadingHistory" class="loading">A carregar historico...</div>
                 <div v-for="(m, i) in messages" :key="i" :class="['bubble', m.role === 'user' ? 'user' : 'ai']">
                     <div class="bubble-head">
@@ -184,9 +247,6 @@ onMounted(async () => {
                 <input v-model="input" placeholder="Pergunta..." class="input" :disabled="streaming" />
                 <button class="btn-primary" :disabled="streaming">Enviar</button>
             </form>
-            <p class="helper">
-                Configura <span class="mono">OPENAI_API_KEY</span> no .env para usar GPT. Sem chave, responde em modo offline.
-            </p>
         </div>
     </component>
 </template>
@@ -234,16 +294,7 @@ onMounted(async () => {
     align-items: center;
 }
 
-.select {
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 8px 10px;
-    font-size: 0.9rem;
-    background: #fff;
-}
-
 .btn-primary {
-    background: #1d4ed8;
     color: #fff;
     border: none;
     padding: 10px 14px;
@@ -364,6 +415,14 @@ onMounted(async () => {
     gap: 8px;
 }
 
+.select {
+    min-width: 280px;
+    border: 1px solid #dbe2f0;
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: #fff;
+    font-size: 0.95rem;
+}
 .link-green {
     color: #16a34a;
     font-weight: 600;
