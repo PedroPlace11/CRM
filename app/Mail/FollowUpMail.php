@@ -12,15 +12,22 @@ class FollowUpMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public string $subject, public string $body) {}
+    public string $mailSubject;
+    public string $mailBody;
+
+    public function __construct(string $subject, string $body)
+    {
+        $this->mailSubject = $subject;
+        $this->mailBody = $body;
+    }
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: $this->subject);
+        return new Envelope(subject: $this->mailSubject);
     }
 
     public function content(): Content
     {
-        return new Content(view: 'emails.follow-up', with: ['body' => $this->body]);
+        return new Content(view: 'emails.follow-up', with: ['body' => $this->mailBody]);
     }
 }

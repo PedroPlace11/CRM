@@ -13,21 +13,31 @@ class ProposalMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public string $mailSubject;
+    public string $mailBody;
+    public string $attachmentPath;
+    public string $attachmentName;
+
     public function __construct(
-        public string $subject,
-        public string $body,
-        public string $attachmentPath,
-        public string $attachmentName,
-    ) {}
+        string $subject,
+        string $body,
+        string $attachmentPath,
+        string $attachmentName,
+    ) {
+        $this->mailSubject = $subject;
+        $this->mailBody = $body;
+        $this->attachmentPath = $attachmentPath;
+        $this->attachmentName = $attachmentName;
+    }
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: $this->subject);
+        return new Envelope(subject: $this->mailSubject);
     }
 
     public function content(): Content
     {
-        return new Content(view: 'emails.proposal', with: ['body' => $this->body]);
+        return new Content(view: 'emails.proposal', with: ['body' => $this->mailBody]);
     }
 
     /** @return array<int, Attachment> */

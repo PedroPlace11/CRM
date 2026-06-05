@@ -7,6 +7,50 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Configuracao de Email (Resend)
+
+Este projeto ja possui suporte a envio e recebimento de e-mails.
+
+### 1) Variaveis de ambiente
+
+No arquivo `.env`, configure:
+
+```env
+MAIL_MAILER=resend
+MAIL_FROM_ADDRESS=onboarding@resend.dev
+MAIL_FROM_NAME="CRM"
+RESEND_KEY=re_xxxxxxxxxxxxxxxxxxxxx
+INBOUND_EMAIL_TOKEN=defina-um-token-forte
+```
+
+### 2) Testar envio de e-mail
+
+Use o comando abaixo para validar o envio:
+
+```bash
+php artisan mail:test seu-email@dominio.com
+```
+
+### 3) Configurar recebimento (Inbound Webhook)
+
+Endpoint ja existente no projeto:
+
+```text
+POST /webhooks/email/inbound?token=SEU_INBOUND_EMAIL_TOKEN
+```
+
+No painel do seu provedor de e-mail (ex: Resend), configure o webhook para enviar para essa URL publica.
+
+O controller que processa o recebimento esta em:
+
+- `app/Http/Controllers/Webhooks/InboundEmailController.php`
+
+Ao receber resposta de cliente, o sistema:
+
+- marca o ultimo e-mail como respondido,
+- interrompe a sequencia de follow-up ativa,
+- registra a atividade no timeline do deal.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
