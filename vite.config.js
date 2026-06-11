@@ -5,27 +5,25 @@ import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 import path from 'node:path';
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 export default defineConfig({
-    plugins: [
-        laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js'],
-            refresh: true,
-            fonts: [
-                bunny('Instrument Sans', {
-                    weights: [400, 500, 600],
-                }),
-            ],
-        }),
-        vue({
-            template: {
-                transformAssetUrls: {
-                    base: null,
-                    includeAbsolute: false,
-                },
+    plugins: [laravel({
+        input: ['resources/css/app.css', 'resources/js/app.js'],
+        refresh: true,
+        fonts: [
+            bunny('Instrument Sans', {
+                weights: [400, 500, 600],
+            }),
+        ],
+    }), vue({
+        template: {
+            transformAssetUrls: {
+                base: null,
+                includeAbsolute: false,
             },
-        }),
-        tailwindcss(),
-    ],
+        },
+    }), tailwindcss(), cloudflare()],
     resolve: {
         alias: {
             '@': path.resolve(__dirname, 'resources/js'),
